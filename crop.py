@@ -6,7 +6,8 @@ from pathlib import Path
 from PyQt5 import QtGui, QtCore,QtWidgets
 from PyQt5.QtWidgets import QRubberBand, QLabel, QApplication, QWidget
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import QRect, Qt
+from PyQt5.QtCore import QRect, Qt, QCommandLineParser, QCommandLineOption
+
 
 def is_valid(path):
     from PIL import Image
@@ -22,11 +23,30 @@ def is_image(path):
 
 
 class QExampleLabel(QLabel):
-    def __init__(self, parentQWidget = None):
+    def __init__(self, app, parentQWidget = None):
+
         super(QExampleLabel, self).__init__(parentQWidget)
         self.initUI()
-        if sys.argv[1:]:
-            self.files = [str(p.absolute()) for p in map(Path, sys.argv[1:]) if p.is_file() and p.suffix.lower() in exts]
+        parser = QCommandLineParser()
+        parser.addHelpOption()
+        parser.addVersionOption()
+
+        parser.addPositionalArgument("file", "Files to open.", "[file file file...]")
+
+        scale_option = QCommandLineOption(
+            ["s", "scale"],
+            "Scale picture to window size"
+        )
+        parser.addOption(scale_option)
+
+        parser.process(app)
+
+        self.has_scale = parser.isSet(scale_option)
+
+        # Check for positional arguments (files to open).
+        self.arguments = parser.positionalArguments()
+        if self.arguments:
+            self.files = [str(p.absolute()) for p in map(Path, self.arguments) if p.is_file() and is_image(str(p))]
             self.first()
         else:
             self.load_dir(os.getcwd())
@@ -53,7 +73,7 @@ class QExampleLabel(QLabel):
             return 
         self.setWindowTitle(os.path.basename(self.path))
         self._pixmap = pixmap.copy()
-        if '-s' in sys.argv:
+        if self.has_scale:
             if pixmap.size().width() > self.size().width():
                 pixmap = pixmap.scaledToWidth(self.size().width())
             if pixmap.size().height() > self.size().height():
@@ -203,8 +223,14 @@ class QExampleLabel(QLabel):
         cropQPixmap = self.pixmap().copy(currentQRect)
         cropQPixmap.save('output.png')
 
+def parse(app):
+    """Parse the arguments and options of the given app object."""
+
+
+
+
 if __name__ == '__main__':
-    myQApplication = QApplication([])#sys.argv)
-    myQExampleLabel = QExampleLabel()
+    myQApplication = QApplication(sys.argv)
+    myQExampleLabel = QExampleLabel(myQApplication)
     myQExampleLabel.show()
     sys.exit(myQApplication.exec_())
