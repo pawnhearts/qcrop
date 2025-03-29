@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys, os
+import mimetypes
 #from fire import Fire
 from pathlib import Path
 from PyQt5 import QtGui, QtCore,QtWidgets
@@ -15,7 +16,10 @@ def is_valid(path):
     except:
         return False
 
-exts = ['.png', '.jpg', '.jpeg', '.webp', '.gif']
+def is_image(path):
+    file_type = mimetypes.guess_file_type(path)[0]
+    return file_type and file_type.split('/')[0] == 'image'
+
 
 class QExampleLabel(QLabel):
     def __init__(self, parentQWidget = None):
